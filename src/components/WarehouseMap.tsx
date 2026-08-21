@@ -4,7 +4,10 @@ import type { Zone } from "@/lib/types";
 
 interface Props {
   zones: Zone[];
+  /** Zones où le produit recherché est déjà stocké (surbrillance forte). */
   highlightedZoneIds?: string[];
+  /** Zones suggérées d'après la catégorie du produit (surbrillance légère). */
+  suggestedZoneIds?: string[];
   /** Zone survolée/sélectionnée (mode admin) */
   selectedZoneId?: string | null;
   onZoneClick?: (zone: Zone) => void;
@@ -18,6 +21,7 @@ interface Props {
 export default function WarehouseMap({
   zones,
   highlightedZoneIds = [],
+  suggestedZoneIds = [],
   selectedZoneId = null,
   onZoneClick,
 }: Props) {
@@ -43,6 +47,7 @@ export default function WarehouseMap({
       >
         {zones.map((zone) => {
           const highlighted = highlightedZoneIds.includes(zone.id);
+          const suggested = !highlighted && suggestedZoneIds.includes(zone.id);
           const selected = selectedZoneId === zone.id;
           return (
             <button
@@ -54,6 +59,8 @@ export default function WarehouseMap({
                 onZoneClick ? "cursor-pointer" : "cursor-default",
                 highlighted
                   ? "z-10 scale-105 border-but-red bg-but-red text-white shadow-lg ring-4 ring-but-red/30"
+                  : suggested
+                  ? "z-10 border-but-red bg-red-50 text-but-red-dark ring-2 ring-but-red/40"
                   : "border-gray-200 bg-but-gray-light text-but-dark hover:border-gray-300",
                 selected ? "outline outline-2 outline-offset-2 outline-but-dark" : "",
               ].join(" ")}
@@ -65,6 +72,7 @@ export default function WarehouseMap({
             >
               <span>{zone.code}</span>
               {highlighted && <span className="text-[10px] font-normal">produit ici</span>}
+              {suggested && <span className="text-[10px] font-normal">suggérée</span>}
             </button>
           );
         })}

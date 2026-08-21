@@ -1,12 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { findOrCreateZone } from "@/lib/zones";
 
 // POST /api/produits
-// Body: { ean, name, zoneCode }
-// Crée un nouveau produit ET son premier emplacement (comme le classeur
-// Google Sheets : impossible de créer un produit sans lui donner un
-// emplacement de départ).
+// Body: { ean, name, categoryId?, poidsColisKg?, colisParPaletteEur?, colisParPaletteCentrale? }
+// Crée uniquement la fiche produit. Le rangement (choix d'alvéole, nombre
+// de palettes) se fait ensuite via /api/rangement — ça permet de réutiliser
+// exactement le même flux de rangement pour un produit neuf ou existant.
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -19,45 +18,57 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const ean = String(body.ean || "").trim();
   const name = String(body.name || "").trim();
-  const zoneCode = String(body.zoneCode || "").trim().toUpperCase();
+  const categoryId = body.categoryId || null;
+  const poidsColisKg = body.poidsColisKg != null && body.poidsColisKg !== "" ? Number(body.poidsColisKg) : null;
+  const colisParPaletteEur =
+    body.colisParPaletteEur != null && body.colisParPaletteEur !== "" ? Number(body.colisParPaletteEur) : null;
+  const colisParPaletteCentrale =
+    body.colisParPaletteCentrale != null && body.colisParPaletteCentrale !== ""
+      ? Number(body.colisParPaletteCentrale)
+      : null;
 
-  if (!ean || !name || !zoneCode) {
-    return NextResponse.json(
-      { error: "Code EAN, nom et emplacement sont obligatoires." },
-      { status: 400 }
-    );
+  if (!ean || !name) {
+    return NextResponse.json({ error: "Code EAN et nom sont obligatoires." }, { status: 400 });
   }
 
-  const { data: product, error: insertError } = await supabase
+  const { data: product, error } = await supabase
     .from("products")
-    .insert({ ean, name, created_by: user.id })
-    .select("id, ean, name, created_at")
+    .insert({
+      ean,
+      name,
+      category_id: categoryId,
+      poids_colis_kg: poidsColisKg,
+      colis_par_palette_eur: colisParPaletteEur,
+      colis_par_palette_centrale: colisParPaletteCentrale,
+      created_by: user.id,
+    })
+    .select("id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale, created_at")
     .single();
 
-  if (insertError) {
-    if (insertError.code === "23505") {
-      return NextResponse.json(
-        { error: "Ce code EAN existe déjà dans la base." },
-        { status: 409 }
-      );
+  if (error) {
+    if (error.code === "23505") {
+      return NextResponse.json({ error: "Ce code EAN existe déjà dans la base." }, { status: 409 });
     }
-    return NextResponse.json({ error: insertError.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Trouve ou crée la zone, puis lie le produit à cette zone.
-  const zone = await findOrCreateZone(supabase, zoneCode);
-  if ("error" in zone) {
-    return NextResponse.json({ error: zone.error }, { status: 500 });
+  return NextResponse.json({ product });
+}
+
+// GET /api/produits — liste tous les produits (utilisé par /admin/produits).
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
-  const { error: linkError } = await supabase.from("product_locations").insert({
-    product_id: product.id,
-    zone_id: zone.id,
-    added_by: user.id,
-  });
-  if (linkError) {
-    return NextResponse.json({ error: linkError.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ product, zone });
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale, created_at")
+    .order("name");
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ products: data });
 }

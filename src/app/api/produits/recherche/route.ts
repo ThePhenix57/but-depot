@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET /api/produits/recherche?ean=1234567890123
-// Renvoie le produit (avec la liste de ses emplacements/zones) ou 404.
+// Renvoie le produit (avec ses emplacements détaillés : alvéole + zone +
+// nombre de colis) et les zones suggérées d'après sa catégorie.
 export async function GET(request: NextRequest) {
   const ean = request.nextUrl.searchParams.get("ean")?.trim();
   if (!ean) {
@@ -19,7 +20,9 @@ export async function GET(request: NextRequest) {
 
   const { data: product, error: productError } = await supabase
     .from("products")
-    .select("id, ean, name, created_at")
+    .select(
+      "id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale, created_at"
+    )
     .eq("ean", ean)
     .maybeSingle();
 
@@ -32,16 +35,29 @@ export async function GET(request: NextRequest) {
 
   const { data: locations, error: locError } = await supabase
     .from("product_locations")
-    .select("id, zone:zones(id, code, label, pos_x, pos_y, largeur, hauteur, couleur)")
-    .eq("product_id", product.id);
+    .select(
+      "id, product_id, alveole_id, colis, type_palette, alveole:alveoles(id, zone_id, code, capacite_kg, taille_palette_max, zone:zones(id, code, label, pos_x, pos_y, largeur, hauteur, couleur))"
+    )
+    .eq("product_id", product.id)
+    .gt("colis", 0);
 
   if (locError) {
     return NextResponse.json({ error: locError.message }, { status: 500 });
   }
 
+  let suggestedZoneIds: string[] = [];
+  if (product.category_id) {
+    const { data: links } = await supabase
+      .from("category_zones")
+      .select("zone_id")
+      .eq("category_id", product.category_id);
+    suggestedZoneIds = (links ?? []).map((l) => l.zone_id);
+  }
+
   return NextResponse.json({
     found: true,
     product,
-    locations: (locations ?? []).map((l) => l.zone),
+    locations: locations ?? [],
+    suggestedZoneIds,
   });
 }

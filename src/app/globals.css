@@ -12,7 +12,7 @@ body {
   color: #1a1a1a;
 }
 
-/* Impression : n'imprime que la fiche (voir components/PrintableFiche.tsx) */
+/* Impression : n'imprime que les fiches (voir components/PrintableFiches.tsx) */
 @media print {
   body * {
     visibility: hidden;

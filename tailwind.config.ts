@@ -1,8 +1,10 @@
 import type { Config } from "tailwindcss";
 
-// NOTE couleurs : rouge/gris "provisoires" en attendant que tu nous donnes
-// la charte graphique exacte (nuancier officiel) en même temps que le logo.
-// Il suffit de changer les codes hexa ci-dessous pour ajuster partout d'un coup.
+// NOTE couleurs : le rouge est échantillonné directement depuis le fichier
+// logo-but.png fourni (#ED1C24). Si ce n'est pas exactement le rouge de la
+// charte graphique officielle BUT (le fichier envoyé n'a pas l'air d'être
+// un export vectoriel officiel), remplace juste les codes hexa ci-dessous
+// pour ajuster partout d'un coup.
 const config: Config = {
   content: [
     "./src/app/**/*.{ts,tsx}",
@@ -12,8 +14,8 @@ const config: Config = {
     extend: {
       colors: {
         but: {
-          red: "#E2001A",
-          "red-dark": "#B50014",
+          red: "#ED1C24",
+          "red-dark": "#B8151C",
           dark: "#1A1A1A",
           gray: "#6B7280",
           "gray-light": "#F3F4F6",

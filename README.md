@@ -10,18 +10,35 @@ Remplace le classeur Google Sheets utilisé précédemment. Voir
 
 ## Fonctionnement
 
+Le plan de l'entrepôt a deux niveaux : des **zones** (les grandes allées,
+ex. "F") affichées sur le plan visuel, et à l'intérieur de chaque zone des
+**alvéoles** précises (ex. "F1-0-A") avec leur propre capacité de poids.
+
 - **Employé** : scanne ou tape un code EAN sur `/recherche`.
-  - Si le produit existe déjà : son nom et son ou ses emplacement(s)
-    s'affichent, avec le plan de l'entrepôt qui met en surbrillance les
-    zones concernées. Possibilité d'ajouter un emplacement supplémentaire,
-    ou d'imprimer la fiche (A4 paysage).
-  - Si le produit n'existe pas : formulaire pour l'enregistrer (nom +
-    premier emplacement).
-  - Un code d'emplacement qui n'existe pas encore sur le plan est créé
-    automatiquement (à repositionner ensuite par un admin si besoin).
-- **Admin / direction** (`/admin/zones` et `/admin/employes`) : déplace,
-  redimensionne ou supprime les zones du plan ; crée les comptes employés
-  (invitation par email) et gère leurs rôles.
+  - Si le produit existe déjà : son nom, sa catégorie et ses alvéoles
+    s'affichent, avec le plan qui met en surbrillance forte les zones où il
+    est déjà stocké et en surbrillance légère les zones suggérées pour sa
+    catégorie (ex. "Literie" → zones F à H).
+  - Si le produit n'existe pas : formulaire pour l'enregistrer (nom,
+    catégorie, poids/colis, colis par palette — ces derniers facultatifs).
+  - Pour ranger une réception : indique le nombre de palettes, le type de
+    chacune (**palette EUR** 1200x800mm ou **palette centrale/à chevron**
+    2400x900mm) et l'alvéole choisie (existante ou nouvelle). Le site
+    calcule le poids de chaque palette et alerte si la capacité de
+    l'alvéole est dépassée (sans bloquer — l'alerte reste affichée et
+    imprimée sur la fiche pour que ce soit vérifié). Imprime ensuite
+    automatiquement une fiche A4 paysage par palette.
+  - Un code d'alvéole qui n'existe pas encore est créé automatiquement (à
+    compléter ensuite côté admin : capacité, taille de palette acceptée).
+- **Admin / direction** :
+  - `/admin/zones` — les grandes zones du plan.
+  - `/admin/alveoles` — les alvéoles précises (création une par une ou en
+    série sur une plage, capacité en kg, taille de palette max acceptée).
+  - `/admin/categories` — associe chaque catégorie de produit aux zones où
+    elle doit être rangée.
+  - `/admin/produits` — catégorie, poids/colis et colis par palette de
+    chaque produit.
+  - `/admin/employes` — comptes employés (invitation par email) et rôles.
 
 ## Stack technique
 
@@ -50,13 +67,17 @@ aux pages `/admin/*`.
 ```
 supabase/schema.sql        Schéma de base de données + règles de sécurité
 src/lib/supabase/          Clients Supabase (navigateur, serveur, admin)
-src/lib/zones.ts           Logique "trouver ou créer une zone" partagée
+src/lib/alveoles.ts        Logique "trouver/créer une alvéole, ajouter des colis" partagée
+src/lib/palettes.ts        Types de palette (EUR / centrale) et règles de compatibilité
 src/middleware.ts          Protection des routes / rafraîchissement session
-src/app/recherche/         Page principale (recherche EAN, plan, fiche)
-src/app/admin/zones/       Gestion du plan de l'entrepôt (admin)
+src/app/recherche/         Page principale (recherche EAN, rangement, plan, fiches)
+src/app/admin/zones/       Gestion des zones du plan (admin)
+src/app/admin/alveoles/    Gestion des alvéoles précises (admin)
+src/app/admin/categories/  Zones autorisées par catégorie de produit (admin)
+src/app/admin/produits/    Catégorie/poids/colis par palette de chaque produit (admin)
 src/app/admin/employes/    Gestion des comptes employés (admin)
-src/app/api/               Routes API (produits, emplacements, zones, employés)
-src/components/            Composants réutilisables (plan, fiche imprimable, en-tête)
+src/app/api/               Routes API (produits, rangement, alvéoles, zones, catégories, employés)
+src/components/            Composants réutilisables (plan, sélecteur d'alvéole, fiches imprimables, en-tête)
 ```
 
 ## Sécurité
@@ -74,5 +95,10 @@ src/components/            Composants réutilisables (plan, fiche imprimable, en
 
 ## Logo et couleurs BUT
 
-Le logo affiché est un bloc de remplacement en attendant le fichier
-officiel. Voir `DEPLOIEMENT.md`, section 7, pour l'intégrer une fois reçu.
+Le logo fourni est utilisé dans `public/logo-but.png` (en-tête, page de
+connexion, icône du site). Le rouge (`#ED1C24`) est échantillonné
+directement depuis ce fichier — si ce n'est pas exactement le rouge de la
+charte graphique officielle, ajuste les codes dans `tailwind.config.ts`.
+
+Le site est aussi installable comme une application (icône + nom BUT, sans
+barre d'adresse) — voir `DEPLOIEMENT.md`, section 8.

@@ -10,10 +10,7 @@ export default async function LoginPage({
     <div className="flex min-h-screen items-center justify-center bg-but-gray-light px-4">
       <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow-md">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          {/* Remplace ce bloc par le logo une fois /public/logo-but.png ajouté */}
-          <span className="flex h-12 w-12 items-center justify-center rounded bg-but-red text-lg font-black text-white">
-            BUT
-          </span>
+          <img src="/logo-but.png" alt="BUT" className="h-16 w-16 rounded-lg shadow-sm" />
           <h1 className="text-xl font-bold text-but-dark">BUT Dépôt</h1>
           <p className="text-sm text-but-gray">
             Fiche rangement de marchandise

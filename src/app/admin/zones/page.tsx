@@ -88,11 +88,13 @@ export default function ZonesAdminPage() {
   return (
     <div>
       <h1 className="mb-1 text-2xl font-bold text-but-dark">
-        Plan de l&apos;entrepôt / emplacements
+        Plan de l&apos;entrepôt — zones (allées)
       </h1>
       <p className="mb-6 text-sm text-but-gray">
-        Ajoute, déplace ou supprime les zones du plan. Position/taille en
-        nombre de cases de grille (colonne, ligne, largeur, hauteur).
+        Les grandes zones affichées sur le plan (ex: allée &quot;F&quot;).
+        Position/taille en nombre de cases de grille (colonne, ligne,
+        largeur, hauteur). Les emplacements précis à l&apos;intérieur d&apos;une
+        zone (ex: F1-0-A) se gèrent dans <strong>Alvéoles</strong>.
       </p>
 
       {message && (
@@ -116,7 +118,7 @@ export default function ZonesAdminPage() {
           required
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="Code (ex: A12)"
+          placeholder="Code (ex: F)"
           className="rounded border border-gray-300 px-3 py-2"
         />
         <input

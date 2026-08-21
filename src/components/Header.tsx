@@ -24,14 +24,7 @@ export default async function Header() {
     <header className="bg-but-red text-white print:hidden">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <Link href="/recherche" className="flex items-center gap-3">
-          {/*
-            LOGO : dépose le fichier fourni dans /public/logo-but.png puis
-            remplace le bloc ci-dessous par :
-            <img src="/logo-but.png" alt="BUT" className="h-8 w-auto" />
-          */}
-          <span className="flex h-8 w-8 items-center justify-center rounded bg-white text-sm font-black text-but-red">
-            BUT
-          </span>
+          <img src="/logo-but.png" alt="BUT" className="h-8 w-8 rounded" />
           <span className="text-lg font-bold leading-tight">
             BUT Dépôt
             <span className="block text-xs font-normal text-white/80">
@@ -48,7 +41,16 @@ export default async function Header() {
             {role === "admin" && (
               <>
                 <Link href="/admin/zones" className="hover:underline">
-                  Plan / emplacements
+                  Plan
+                </Link>
+                <Link href="/admin/alveoles" className="hover:underline">
+                  Alvéoles
+                </Link>
+                <Link href="/admin/categories" className="hover:underline">
+                  Catégories
+                </Link>
+                <Link href="/admin/produits" className="hover:underline">
+                  Produits
                 </Link>
                 <Link href="/admin/employes" className="hover:underline">
                   Employés
