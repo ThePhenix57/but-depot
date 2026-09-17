@@ -22,12 +22,18 @@ export async function PATCH(
   if ("capacite_kg" in body)
     updates.capacite_kg = body.capacite_kg === "" || body.capacite_kg == null ? null : Number(body.capacite_kg);
   if ("taille_palette_max" in body) updates.taille_palette_max = body.taille_palette_max || null;
+  if ("bloquee" in body) {
+    updates.bloquee = Boolean(body.bloquee);
+    updates.bloquee_motif = body.bloquee ? body.bloquee_motif || null : null;
+    updates.bloquee_par = body.bloquee ? user.id : null;
+    updates.bloquee_at = body.bloquee ? new Date().toISOString() : null;
+  }
 
   const { data, error } = await supabase
     .from("alveoles")
     .update(updates)
     .eq("id", id)
-    .select("id, zone_id, code, capacite_kg, taille_palette_max")
+    .select("id, zone_id, code, capacite_kg, taille_palette_max, bloquee, bloquee_motif, bloquee_at")
     .single();
 
   if (error) {

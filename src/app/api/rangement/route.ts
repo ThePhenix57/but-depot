@@ -14,18 +14,37 @@ interface PaletteInput {
 // Body: { productId, palettes: PaletteInput[] }
 //
 // Range une ou plusieurs palettes d'un même produit reçu : pour chaque
-// palette, trouve/crée l'alvéole choisie, calcule le poids (poids/colis x
-// colis/palette du produit, ou colisOverride si le produit n'a pas encore
-// ces infos), l'ajoute au total déjà stocké dans l'alvéole, et renvoie tout
-// ce qu'il faut pour imprimer une fiche par palette.
+// palette, trouve/crée l'alvéole choisie, indique où le produit se trouve
+// désormais (voir /recherche) et renvoie tout ce qu'il faut pour imprimer
+// une fiche par palette.
 //
-// Le dépassement de la capacité d'une alvéole n'est jamais bloquant (il n'y
-// a pas toujours un meilleur endroit disponible sur le moment) : il est
-// juste signalé clairement (depassement: true) pour que l'employé et
-// l'admin le voient et réagissent si besoin. En revanche, une palette dont
-// la taille ne rentre physiquement pas dans l'alvéole (ex: palette centrale
+// Le site n'est volontairement PAS un outil de gestion de stock précise :
+// il indique juste le dernier endroit où quelqu'un a dit avoir mis le
+// produit, pas une quantité garantie exacte. Le nombre de colis et le poids
+// restent facultatifs et purement indicatifs (poids/colis x colis/palette
+// du produit si connus, sinon 1 colis par défaut) — rien ne bloque un
+// rangement faute de les connaître. Le dépassement de la capacité d'une
+// alvéole n'est jamais bloquant non plus : il est juste signalé
+// (depassement: true) à titre indicatif. En revanche, une palette dont la
+// taille ne rentre physiquement pas dans l'alvéole (ex: palette centrale
 // dans une alvéole limitée à l'EUR) est refusée.
 export async function POST(request: NextRequest) {
+  try {
+    return await handlePost(request);
+  } catch (err) {
+    // Filet de sécurité : sans ça, une erreur inattendue fait planter la
+    // route sans réponse JSON valide, et le site n'affiche alors aucun
+    // message (juste un "ça ne marche pas" silencieux côté employé).
+    const messageErreur = err instanceof Error ? err.message : String(err);
+    console.error("Erreur /api/rangement:", err);
+    return NextResponse.json(
+      { error: `Erreur inattendue côté serveur : ${messageErreur}` },
+      { status: 500 }
+    );
+  }
+}
+
+async function handlePost(request: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -60,12 +79,20 @@ export async function POST(request: NextRequest) {
     const typePalette = p.typePalette === "centrale" ? "centrale" : "eur";
 
     // 1. Résout (ou crée) l'alvéole cible.
-    let alveole: { id: string; zone_id: string; code: string; capacite_kg: number | null; taille_palette_max: TypePalette | null } | null = null;
+    let alveole: {
+      id: string;
+      zone_id: string;
+      code: string;
+      capacite_kg: number | null;
+      taille_palette_max: TypePalette | null;
+      bloquee: boolean;
+      bloquee_motif: string | null;
+    } | null = null;
 
     if (p.alveoleId) {
       const { data, error } = await supabase
         .from("alveoles")
-        .select("id, zone_id, code, capacite_kg, taille_palette_max")
+        .select("id, zone_id, code, capacite_kg, taille_palette_max, bloquee, bloquee_motif")
         .eq("id", p.alveoleId)
         .single();
       if (error || !data) {
@@ -91,6 +118,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Chaque palette doit indiquer une alvéole." }, { status: 400 });
     }
 
+    // 1bis. Une alvéole bloquée (ex: lisse cassée, voir /admin/alveoles) ne
+    // peut recevoir aucun nouveau rangement tant qu'elle n'est pas
+    // débloquée par un admin — vérifié ici côté serveur (et pas seulement
+    // dans le sélecteur d'alvéole côté client) pour rester valable même en
+    // cas de blocage entre le chargement de la page et la validation.
+    if (alveole.bloquee) {
+      return NextResponse.json(
+        {
+          error: `L'alvéole ${alveole.code} est bloquée${
+            alveole.bloquee_motif ? ` (${alveole.bloquee_motif})` : ""
+          } — choisis un autre emplacement, ou attends qu'un admin la débloque.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // 2. Vérifie que la palette rentre physiquement dans l'alvéole.
     if (!alveoleAcceptePalette(alveole.taille_palette_max, typePalette)) {
       return NextResponse.json(
@@ -101,19 +144,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Calcule le nombre de colis et le poids de cette palette.
+    // 3. Nombre de colis et poids de cette palette — purement indicatif (le
+    // site n'est pas un outil de gestion de stock précis, voir /admin/alveoles
+    // et /recherche) : si on ne le connaît pas, on ne bloque pas le rangement,
+    // on part juste sur 1 colis sans poids calculé.
     const colisParPalette =
       typePalette === "centrale" ? product.colis_par_palette_centrale : product.colis_par_palette_eur;
-    const colis = colisParPalette ?? p.colisOverride ?? null;
-    if (!colis) {
-      return NextResponse.json(
-        {
-          error:
-            "Nombre de colis par palette inconnu pour ce produit. Renseigne-le dans la fiche produit, ou indique le nombre de colis pour cette palette.",
-        },
-        { status: 400 }
-      );
-    }
+    const colis = colisParPalette ?? p.colisOverride ?? 1;
     const poidsPaletteKg = product.poids_colis_kg != null ? Number(product.poids_colis_kg) * colis : null;
 
     // 4. Occupation actuelle de l'alvéole (avant ajout) pour calculer le dépassement.
@@ -131,6 +168,18 @@ export async function POST(request: NextRequest) {
       addedBy: user.id,
     });
     if (addError) return NextResponse.json({ error: addError }, { status: 500 });
+
+    // 5bis. Garde une trace de cette action précise dans le journal (voir
+    // /admin/journal, admin uniquement) — contrairement à product_locations
+    // ci-dessus qui ne garde que le total actuel, écrasé à chaque ajout.
+    await supabase.from("mouvements").insert({
+      type: "rangement",
+      product_id: productId,
+      alveole_id: alveole.id,
+      colis,
+      type_palette: typePalette,
+      created_by: user.id,
+    });
 
     // 6. Infos de la zone pour la fiche imprimée.
     const { data: zone } = await supabase

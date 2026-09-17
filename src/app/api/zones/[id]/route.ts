@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-// PATCH /api/zones/:id — modifie une zone (position, taille, couleur, label).
+// PATCH /api/zones/:id — modifie le code/libellé/couleur d'une zone (pas sa
+// position : voir POST /api/zones/:id/rects pour ajouter un rectangle, et
+// DELETE /api/zones/rects/:rectId pour en retirer un).
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -17,7 +19,7 @@ export async function PATCH(
 
   const body = await request.json();
   const updates: Record<string, unknown> = {};
-  for (const key of ["code", "label", "pos_x", "pos_y", "largeur", "hauteur", "couleur"]) {
+  for (const key of ["code", "label", "couleur", "ordre_inverse"]) {
     if (key in body) updates[key] = body[key];
   }
   if (typeof updates.code === "string") updates.code = updates.code.toUpperCase();

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Profile } from "@/lib/types";
+import type { Profile, Role } from "@/lib/types";
+import Button from "@/components/ui/Button";
 
 export default function EmployesAdminPage() {
   const [employes, setEmployes] = useState<Profile[]>([]);
@@ -9,7 +10,7 @@ export default function EmployesAdminPage() {
 
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<"employe" | "admin">("employe");
+  const [role, setRole] = useState<Role>("employe");
 
   useEffect(() => {
     load();
@@ -43,11 +44,29 @@ export default function EmployesAdminPage() {
     load();
   }
 
-  async function handleRoleChange(profile: Profile, newRole: "employe" | "admin") {
+  async function handleRoleChange(profile: Profile, newRole: Role) {
     const res = await fetch(`/api/employes/${profile.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: newRole }),
+    });
+    if (res.ok) load();
+  }
+
+  async function handleDateNaissanceChange(profile: Profile, date: string) {
+    const res = await fetch(`/api/employes/${profile.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date_naissance: date || null }),
+    });
+    if (res.ok) load();
+  }
+
+  async function handleAccesSavChange(profile: Profile, accesSav: boolean) {
+    const res = await fetch(`/api/employes/${profile.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ acces_sav: accesSav }),
     });
     if (res.ok) load();
   }
@@ -61,7 +80,7 @@ export default function EmployesAdminPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-bold text-but-dark">Employés</h1>
+      <h1 className="mb-1 text-2xl font-bold tracking-tight text-but-dark">Employés</h1>
       <p className="mb-6 text-sm text-but-gray">
         Crée un compte nominatif par personne. Un email d&apos;invitation lui
         permet de choisir son mot de passe (nécessite l&apos;envoi d&apos;email
@@ -69,12 +88,12 @@ export default function EmployesAdminPage() {
       </p>
 
       {message && (
-        <p className="mb-4 rounded bg-but-gray-light px-3 py-2 text-sm">{message}</p>
+        <p className="mb-4 rounded-xl bg-but-gray-light px-3 py-2 text-sm text-but-dark">{message}</p>
       )}
 
       <form
         onSubmit={handleInvite}
-        className="mb-10 grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-4 sm:grid-cols-4"
+        className="mb-10 grid grid-cols-1 gap-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-card sm:grid-cols-4"
       >
         <input
           required
@@ -82,38 +101,38 @@ export default function EmployesAdminPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
-          className="rounded border border-gray-300 px-3 py-2 sm:col-span-2"
+          className="rounded-lg border border-gray-300 px-3 py-2 focus:border-but-red focus:outline-none sm:col-span-2"
         />
         <input
           required
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           placeholder="Nom complet"
-          className="rounded border border-gray-300 px-3 py-2"
+          className="rounded-lg border border-gray-300 px-3 py-2 focus:border-but-red focus:outline-none"
         />
         <select
           value={role}
           onChange={(e) => setRole(e.target.value as "employe" | "admin")}
-          className="rounded border border-gray-300 px-3 py-2"
+          className="rounded-lg border border-gray-300 px-3 py-2 focus:border-but-red focus:outline-none"
         >
           <option value="employe">Employé</option>
+          <option value="dev">Dev</option>
           <option value="admin">Admin / direction</option>
         </select>
-        <button
-          type="submit"
-          className="rounded bg-but-red px-4 py-2 font-semibold text-white sm:col-span-4"
-        >
+        <Button type="submit" className="sm:col-span-4">
           Inviter
-        </button>
+        </Button>
       </form>
 
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <div className="overflow-x-auto rounded-xl border border-gray-200">
         <table className="w-full text-sm">
           <thead className="bg-but-gray-light text-left">
             <tr>
               <th className="px-3 py-2">Nom</th>
               <th className="px-3 py-2">Email</th>
               <th className="px-3 py-2">Rôle</th>
+              <th className="px-3 py-2">Date de naissance</th>
+              <th className="px-3 py-2">Accès SAV</th>
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
@@ -126,21 +145,39 @@ export default function EmployesAdminPage() {
                   <select
                     value={p.role}
                     onChange={(e) =>
-                      handleRoleChange(p, e.target.value as "employe" | "admin")
+                      handleRoleChange(p, e.target.value as Role)
                     }
                     className="rounded border border-gray-200 px-2 py-1"
                   >
                     <option value="employe">Employé</option>
+                    <option value="dev">Dev</option>
                     <option value="admin">Admin</option>
                   </select>
                 </td>
+                <td className="px-3 py-2">
+                  <input
+                    type="date"
+                    defaultValue={p.date_naissance ?? ""}
+                    onBlur={(e) => handleDateNaissanceChange(p, e.target.value)}
+                    className="rounded border border-gray-200 px-2 py-1"
+                  />
+                </td>
+                <td className="px-3 py-2">
+                  {p.role === "admin" || p.role === "dev" ? (
+                    <span className="text-xs text-but-gray">Toujours (rôle {p.role})</span>
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={p.acces_sav}
+                      onChange={(e) => handleAccesSavChange(p, e.target.checked)}
+                      className="h-4 w-4 accent-but-red"
+                    />
+                  )}
+                </td>
                 <td className="px-3 py-2 text-right">
-                  <button
-                    onClick={() => handleDelete(p)}
-                    className="rounded border border-but-red px-2 py-1 text-xs font-semibold text-but-red hover:bg-but-red hover:text-white"
-                  >
+                  <Button size="sm" variant="danger" onClick={() => handleDelete(p)}>
                     Supprimer
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

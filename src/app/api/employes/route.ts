@@ -31,7 +31,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, full_name, role, created_at")
+    .select("id, email, full_name, role, date_naissance, acces_sav, created_at")
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const email = String(body.email || "").trim().toLowerCase();
   const full_name = String(body.full_name || "").trim();
-  const role = body.role === "admin" ? "admin" : "employe";
+  const role = body.role === "admin" ? "admin" : body.role === "dev" ? "dev" : "employe";
 
   if (!email || !full_name) {
     return NextResponse.json(

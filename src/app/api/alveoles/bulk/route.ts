@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
     .select("role")
     .eq("id", user.id)
     .single();
-  if (profile?.role !== "admin") {
+  if (profile?.role !== "admin" && profile?.role !== "dev") {
     return NextResponse.json(
-      { error: "Seul un compte admin/direction peut générer des alvéoles en série." },
+      { error: "Seul un compte admin/direction ou dev peut générer des alvéoles en série." },
       { status: 403 }
     );
   }
@@ -87,4 +87,43 @@ export async function POST(request: NextRequest) {
     creees: data?.length ?? 0,
     ignorees: codes.length - (data?.length ?? 0),
   });
+}
+
+// DELETE /api/alveoles/bulk — supprime plusieurs alvéoles d'un coup (voir
+// /admin/alveoles, sélection multiple + "Supprimer la sélection"). Réservé
+// à l'admin. Body: { ids: string[] }
+export async function DELETE(request: NextRequest) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "admin") {
+    return NextResponse.json(
+      { error: "Seul un compte admin/direction peut supprimer des alvéoles." },
+      { status: 403 }
+    );
+  }
+
+  const body = await request.json();
+  const ids: string[] = Array.isArray(body.ids) ? body.ids.map((id: unknown) => String(id)) : [];
+  if (ids.length === 0) {
+    return NextResponse.json({ error: "Aucune alvéole sélectionnée." }, { status: 400 });
+  }
+
+  const { error, count } = await supabase
+    .from("alveoles")
+    .delete({ count: "exact" })
+    .in("id", ids);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ supprimees: count ?? ids.length });
 }

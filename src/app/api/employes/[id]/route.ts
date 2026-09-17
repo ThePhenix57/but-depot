@@ -21,7 +21,8 @@ async function requireAdmin() {
   return { user };
 }
 
-// PATCH /api/employes/:id — change le rôle (employe <-> admin).
+// PATCH /api/employes/:id — change le rôle (employe <-> admin), la date de
+// naissance et/ou l'accès SAV (voir /admin/employes).
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -33,12 +34,16 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const role = body.role === "admin" ? "admin" : "employe";
+  const updates: Record<string, unknown> = {};
+  if ("role" in body)
+    updates.role = body.role === "admin" ? "admin" : body.role === "dev" ? "dev" : "employe";
+  if ("date_naissance" in body) updates.date_naissance = body.date_naissance || null;
+  if ("acces_sav" in body) updates.acces_sav = !!body.acces_sav;
 
   const supabase = await createClient();
   const { error } = await supabase
     .from("profiles")
-    .update({ role })
+    .update(updates)
     .eq("id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

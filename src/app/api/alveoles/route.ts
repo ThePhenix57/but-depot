@@ -26,12 +26,19 @@ export async function GET(request: NextRequest) {
 
   const { data: alveoles, error: alvError } = await supabase
     .from("alveoles")
-    .select("id, zone_id, code, capacite_kg, taille_palette_max");
+    .select("id, zone_id, code, capacite_kg, taille_palette_max, bloquee, bloquee_motif, bloquee_at");
   if (alvError) return NextResponse.json({ error: alvError.message }, { status: 500 });
 
   const merged = (occupancy ?? []).map((o) => {
     const a = (alveoles ?? []).find((x) => x.id === o.alveole_id);
-    return { ...o, id: o.alveole_id, taille_palette_max: a?.taille_palette_max ?? null };
+    return {
+      ...o,
+      id: o.alveole_id,
+      taille_palette_max: a?.taille_palette_max ?? null,
+      bloquee: a?.bloquee ?? false,
+      bloquee_motif: a?.bloquee_motif ?? null,
+      bloquee_at: a?.bloquee_at ?? null,
+    };
   });
 
   return NextResponse.json({ alveoles: merged });

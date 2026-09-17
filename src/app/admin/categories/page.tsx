@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Category, Zone } from "@/lib/types";
+import Button from "@/components/ui/Button";
 
 export default function CategoriesAdminPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -10,9 +11,15 @@ export default function CategoriesAdminPage() {
 
   const [name, setName] = useState("");
   const [zoneIds, setZoneIds] = useState<string[]>([]);
+  // Le rôle "dev" peut créer une catégorie mais pas la supprimer.
+  const [role, setRole] = useState<string | null>(null);
+  const peutSupprimer = role === "admin";
 
   useEffect(() => {
     load();
+    fetch("/api/me")
+      .then((res) => res.json())
+      .then((json) => json.role && setRole(json.role));
   }, []);
 
   async function load() {
@@ -62,7 +69,7 @@ export default function CategoriesAdminPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-2xl font-bold text-but-dark">Catégories</h1>
+      <h1 className="mb-1 text-2xl font-bold tracking-tight text-but-dark">Catégories</h1>
       <p className="mb-6 text-sm text-but-gray">
         Associe chaque catégorie de produit aux zones où elle doit être
         rangée (ex: &quot;Literie&quot; → zones F, G, H). Le site suggère
@@ -71,12 +78,12 @@ export default function CategoriesAdminPage() {
       </p>
 
       {message && (
-        <p className="mb-4 rounded bg-but-gray-light px-3 py-2 text-sm">{message}</p>
+        <p className="mb-4 rounded-xl bg-but-gray-light px-3 py-2 text-sm text-but-dark">{message}</p>
       )}
 
       <form
         onSubmit={handleCreate}
-        className="mb-10 rounded-lg border border-gray-200 p-4"
+        className="mb-10 rounded-2xl border border-gray-200 bg-white p-5 shadow-card"
       >
         <div className="mb-3 flex gap-3">
           <input
@@ -84,14 +91,9 @@ export default function CategoriesAdminPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nom de la catégorie (ex: Literie)"
-            className="flex-1 rounded border border-gray-300 px-3 py-2"
+            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 focus:border-but-red focus:outline-none"
           />
-          <button
-            type="submit"
-            className="rounded bg-but-red px-4 py-2 font-semibold text-white"
-          >
-            Créer
-          </button>
+          <Button type="submit">Créer</Button>
         </div>
         <div className="flex flex-wrap gap-3 text-sm">
           {zones.map((z) => (
@@ -113,15 +115,14 @@ export default function CategoriesAdminPage() {
 
       <div className="flex flex-col gap-4">
         {categories.map((c) => (
-          <div key={c.id} className="rounded-lg border border-gray-200 p-4">
+          <div key={c.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-card">
             <div className="mb-2 flex items-center justify-between">
               <span className="font-bold text-but-dark">{c.name}</span>
-              <button
-                onClick={() => handleDelete(c)}
-                className="rounded border border-but-red px-2 py-1 text-xs font-semibold text-but-red hover:bg-but-red hover:text-white"
-              >
-                Supprimer
-              </button>
+              {peutSupprimer && (
+                <Button size="sm" variant="danger" onClick={() => handleDelete(c)}>
+                  Supprimer
+                </Button>
+              )}
             </div>
             <div className="flex flex-wrap gap-3 text-sm">
               {zones.map((z) => (
@@ -129,6 +130,7 @@ export default function CategoriesAdminPage() {
                   <input
                     type="checkbox"
                     checked={(c.zone_ids ?? []).includes(z.id)}
+                    disabled={!peutSupprimer}
                     onChange={() => toggleZone(c, z.id)}
                   />
                   {z.label || z.code}

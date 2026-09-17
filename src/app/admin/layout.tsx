@@ -19,9 +19,13 @@ export default async function AdminLayout({
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
+  // Le rôle "dev" peut entrer dans /admin/* (zones, alvéoles, catégories),
+  // mais chaque section qui lui est interdite (employés, produits,
+  // signalements, journal, planning, objectifs) a son propre layout.tsx qui
+  // re-vérifie strictement role === "admin" et le renvoie ailleurs.
+  if (profile?.role !== "admin" && profile?.role !== "dev") {
     redirect("/recherche");
   }
 
-  return <div className="mx-auto max-w-5xl px-4 py-8">{children}</div>;
+  return <div className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">{children}</div>;
 }
