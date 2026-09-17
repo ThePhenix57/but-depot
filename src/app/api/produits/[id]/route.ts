@@ -31,12 +31,21 @@ export async function PATCH(
       body.colis_par_palette_centrale === "" || body.colis_par_palette_centrale == null
         ? null
         : Number(body.colis_par_palette_centrale);
+  if ("palette_conseillee" in body)
+    updates.palette_conseillee =
+      body.palette_conseillee === "eur" || body.palette_conseillee === "centrale" ? body.palette_conseillee : null;
+  if ("colis_multiples" in body) updates.colis_multiples = body.colis_multiples === true;
+  if ("nb_colis_par_meuble" in body)
+    updates.nb_colis_par_meuble =
+      body.nb_colis_par_meuble === "" || body.nb_colis_par_meuble == null ? null : Number(body.nb_colis_par_meuble);
 
   const { data, error } = await supabase
     .from("products")
     .update(updates)
     .eq("id", id)
-    .select("id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale")
+    .select(
+      "id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale, palette_conseillee, colis_multiples, nb_colis_par_meuble"
+    )
     .single();
 
   if (error) {

@@ -26,6 +26,11 @@ export async function POST(request: NextRequest) {
     body.colisParPaletteCentrale != null && body.colisParPaletteCentrale !== ""
       ? Number(body.colisParPaletteCentrale)
       : null;
+  const paletteConseillee =
+    body.paletteConseillee === "eur" || body.paletteConseillee === "centrale" ? body.paletteConseillee : null;
+  const colisMultiples = body.colisMultiples === true;
+  const nbColisParMeuble =
+    body.nbColisParMeuble != null && body.nbColisParMeuble !== "" ? Number(body.nbColisParMeuble) : null;
 
   if (!ean || !name) {
     return NextResponse.json({ error: "Code EAN et nom sont obligatoires." }, { status: 400 });
@@ -40,9 +45,14 @@ export async function POST(request: NextRequest) {
       poids_colis_kg: poidsColisKg,
       colis_par_palette_eur: colisParPaletteEur,
       colis_par_palette_centrale: colisParPaletteCentrale,
+      palette_conseillee: paletteConseillee,
+      colis_multiples: colisMultiples,
+      nb_colis_par_meuble: nbColisParMeuble,
       created_by: user.id,
     })
-    .select("id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale, created_at")
+    .select(
+      "id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale, palette_conseillee, created_at, colis_multiples, nb_colis_par_meuble"
+    )
     .single();
 
   if (error) {
@@ -67,7 +77,9 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("products")
-    .select("id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale, created_at")
+    .select(
+      "id, ean, name, category_id, poids_colis_kg, colis_par_palette_eur, colis_par_palette_centrale, palette_conseillee, created_at, colis_multiples, nb_colis_par_meuble"
+    )
     .order("name");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ products: data });
