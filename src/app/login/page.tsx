@@ -1,4 +1,5 @@
 import { login } from "./actions";
+import Button from "@/components/ui/Button";
 
 export default async function LoginPage({
   searchParams,
@@ -8,10 +9,10 @@ export default async function LoginPage({
   const { error } = await searchParams;
   return (
     <div className="flex min-h-screen items-center justify-center bg-but-gray-light px-4">
-      <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow-md">
+      <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-8 shadow-card">
         <div className="mb-6 flex flex-col items-center gap-2 text-center">
-          <img src="/logo-but.png" alt="BUT" className="h-16 w-16 rounded-lg shadow-sm" />
-          <h1 className="text-xl font-bold text-but-dark">BUT Dépôt</h1>
+          <img src="/logo-but.png" alt="BUT" className="h-16 w-16 rounded-xl shadow-sm" />
+          <h1 className="text-xl font-bold tracking-tight text-but-dark">BUT Dépôt</h1>
           <p className="text-sm text-but-gray">
             Fiche rangement de marchandise
           </p>
@@ -27,7 +28,7 @@ export default async function LoginPage({
               name="email"
               required
               autoComplete="username"
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:border-but-red focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-but-red focus:outline-none"
               placeholder="prenom.nom@but.fr"
             />
           </div>
@@ -40,22 +41,19 @@ export default async function LoginPage({
               name="password"
               required
               autoComplete="current-password"
-              className="w-full rounded border border-gray-300 px-3 py-2 focus:border-but-red focus:outline-none"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-but-red focus:outline-none"
             />
           </div>
 
           {error && (
-            <p className="rounded bg-red-50 px-3 py-2 text-sm text-but-red-dark">
+            <p className="rounded-lg border border-but-red/20 bg-but-red-light px-3 py-2 text-sm text-but-red-dark">
               {error}
             </p>
           )}
 
-          <button
-            type="submit"
-            className="mt-2 rounded bg-but-red px-4 py-2 font-semibold text-white transition hover:bg-but-red-dark"
-          >
+          <Button type="submit" size="lg" className="mt-2 w-full">
             Se connecter
-          </button>
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-xs text-but-gray">

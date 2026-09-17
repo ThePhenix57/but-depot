@@ -10,6 +10,49 @@ body {
 body {
   background-color: #f9fafb;
   color: #1a1a1a;
+  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus clavier visible partout (accessibilité), mais uniquement au
+   clavier — pas de halo disgracieux à chaque clic à la souris/au doigt. */
+:focus-visible {
+  outline: 2px solid #ed1c24;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Transitions douces par défaut sur les éléments interactifs, harmonisées
+   avec le nouveau design (cartes, boutons, liens) — reste très bref pour
+   ne jamais ralentir l'utilisation au scanner/PDA. */
+button,
+a,
+input,
+select,
+textarea {
+  transition: color 0.15s ease, background-color 0.15s ease,
+    border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+/* Barre de défilement fine et discrète (Chrome/Edge — PDA et postes de
+   l'entrepôt tournent dessus) ; les autres navigateurs gardent leur barre
+   par défaut, sans impact fonctionnel. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 999px;
+  border: 2px solid transparent;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
 }
 
 /* Impression : n'imprime que les fiches (voir components/PrintableFiches.tsx) */
@@ -20,12 +63,41 @@ body {
   #fiche-impression,
   #fiche-impression * {
     visibility: visible;
+    /* Sans ça, Chrome retire les couleurs de fond à l'impression (sauf si
+       l'employé pense à cocher "Graphiques d'arrière-plan" dans la fenêtre
+       d'impression) — ce qui fait disparaître le bandeau noir "EMPLACEMENT"
+       même si son CSS est correct. On force l'impression des couleurs pour
+       ne plus dépendre de ce réglage. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   #fiche-impression {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
+  }
+  /* Tableaux larges (ex: planning) : sans ça, une min-width pensée pour un
+     écran dépasse la largeur de la page imprimée et coupe les dernières
+     colonnes (barre de défilement inutile sur papier). On force le
+     tableau à tenir dans la page plutôt que de dépendre du CSS écran. */
+  #fiche-impression table {
+    width: 100% !important;
+    table-layout: fixed;
+  }
+  #fiche-impression th,
+  #fiche-impression td {
+    padding: 3px 4px !important;
+    overflow-wrap: break-word;
+    white-space: normal !important;
+    min-width: 0 !important;
+  }
+  /* Filet de sécurité : quel que soit l'élément (div, bouton...), rien ne
+     doit pouvoir créer sa propre barre de défilement ou dépasser la page
+     imprimée à l'intérieur de la fiche. */
+  #fiche-impression * {
+    overflow: visible !important;
+    max-width: 100% !important;
   }
   @page {
     size: A4 landscape;
