@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { IconPower } from "@/components/icons";
 
 export default function LogoutButton() {
   const router = useRouter();
@@ -16,9 +17,11 @@ export default function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="rounded border border-white/40 px-2 py-1 text-xs hover:bg-white/10"
+      title="Déconnexion"
+      aria-label="Déconnexion"
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/40 text-white hover:bg-white/10"
     >
-      Déconnexion
+      <IconPower className="h-4 w-4" />
     </button>
   );
 }

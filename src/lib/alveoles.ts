@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export async function findAlveoleByCode(supabase: SupabaseClient, code: string) {
   return supabase
     .from("alveoles")
-    .select("id, zone_id, code, capacite_kg, taille_palette_max")
+    .select("id, zone_id, code, capacite_kg, taille_palette_max, bloquee, bloquee_motif")
     .eq("code", code)
     .maybeSingle();
 }
@@ -28,7 +28,7 @@ export async function createAlveole(
       capacite_kg: params.capaciteKg ?? null,
       taille_palette_max: params.taillePaletteMax ?? null,
     })
-    .select("id, zone_id, code, capacite_kg, taille_palette_max")
+    .select("id, zone_id, code, capacite_kg, taille_palette_max, bloquee, bloquee_motif")
     .single();
 }
 

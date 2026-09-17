@@ -25,9 +25,21 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getSession() lit la session directement depuis le cookie déjà présent
+  // (rapide, pas d'aller-retour réseau vers Supabase à chaque page) — elle
+  // ne rafraîchit un jeton expiré que si besoin. C'est nettement plus
+  // robuste que getUser(), qui revérifie auprès de Supabase à CHAQUE page :
+  // si Supabase ralentit ne serait-ce que quelques secondes, getUser()
+  // rendait tout le site inutilisable (page bloquée, puis 504).
+  //
+  // Sécurité en plus : si jamais un rafraîchissement de jeton devait quand
+  // même appeler Supabase et que ça traîne, on ne laisse jamais ça bloquer
+  // tout le site plus de 8 secondes — au pire on traite comme "pas
+  // connecté" (redirige vers /login) plutôt que de planter en 504.
+  const user = await Promise.race([
+    supabase.auth.getSession().then((res) => res.data.session?.user ?? null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 8000)),
+  ]);
 
   const isLoginPage = request.nextUrl.pathname.startsWith("/login");
 
@@ -39,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
   if (user && isLoginPage) {
     const url = request.nextUrl.clone();
-    url.pathname = "/recherche";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
@@ -47,7 +59,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
